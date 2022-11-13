@@ -36,7 +36,9 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.mediapipe.components.CameraHelper;
 import com.google.mediapipe.components.CameraXPreviewHelper;
 import com.google.mediapipe.components.ExternalTextureConverter;
@@ -56,15 +58,16 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.lang.Math;
 
 
-
 /**
  * Main activity of MediaPipe example apps.
  */
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final String BINARY_GRAPH_NAME = "pose_tracking_gpu.binarypb";
@@ -84,6 +87,8 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("mediapipe_jni");
         System.loadLibrary("opencv_java3");
     }
+
+    public static String Str_angle = "";
 
     // {@link SurfaceTexture} where the camera-preview frames can be accessed.
     private SurfaceTexture previewFrameTexture;
@@ -115,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             applicationInfo =
                     getPackageManager().getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA);
         } catch (NameNotFoundException e) {
-            Log.e(TAG, "Cannot find application info: " + e);
+            Log.v(TAG, "Cannot find application info: " + e);
         }
         // Initialize asset manager so that MediaPipe native libraries can access the app assets, e.g.,
         // binary graphs.
@@ -258,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
         // display size.
         converter.setSurfaceTextureAndAttachToGLContext(
                 previewFrameTexture,
-                isCameraRotated ? displaySize.getHeight() : displaySize.getWidth(),
+                isCameraRotated ? displaySize.getHeight()  : displaySize.getWidth(),
                 isCameraRotated ? displaySize.getWidth() : displaySize.getHeight());
     }
 
@@ -267,6 +272,9 @@ public class MainActivity extends AppCompatActivity {
         ViewGroup viewGroup = findViewById(R.id.preview_display_layout);
         viewGroup.addView(previewDisplayView);
 
+        TextView textView1 = (TextView) findViewById(R.id.textView2) ;
+        textView1.setText(Str_angle); ;
+
         previewDisplayView
                 .getHolder()
                 .addCallback(
@@ -274,7 +282,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void surfaceCreated(SurfaceHolder holder) {
                                 processor.getVideoSurfaceOutput().setSurface(holder.getSurface());
-                                Log.d("Surface","Surface Created");
+                                Log.d("Surface", "Surface Created");
 
                             }
 
@@ -282,44 +290,55 @@ public class MainActivity extends AppCompatActivity {
                             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
                                 onPreviewDisplaySurfaceChanged(holder, format, width, height);
                                 // 이곳에서 width , height 가 720,1280
-                                Log.d("Surface","Surface Changed");
+                                Log.d("Surface", "Surface Changed");
                             }
 
                             @Override
                             public void surfaceDestroyed(SurfaceHolder holder) {
                                 processor.getVideoSurfaceOutput().setSurface(null);
-                                Log.d("Surface","Surface destroy");
+                                Log.d("Surface", "Surface destroy");
                             }
 
                         });
 
     }
+
     //해당 코드에서 landmark의 좌표를 추출해낼 수 있다.
     //[0.0 , 1.0] 으로 normazlized 된 coordinate -> image width, height
     private static String getPoseLandmarksDebugString(NormalizedLandmarkList poseLandmarks) {
         String poseLandmarkStr = "Pose landmarks: " + poseLandmarks.getLandmarkCount() + "\n";
-        ArrayList<PoseLandMark> poseMarkers= new ArrayList<PoseLandMark>();
+        ArrayList<PoseLandMark> poseMarkers = new ArrayList<PoseLandMark>();
         int landmarkIndex = 0;
         for (NormalizedLandmark landmark : poseLandmarks.getLandmarkList()) {
-            PoseLandMark marker = new PoseLandMark(landmark.getX(),landmark.getY(),landmark.getVisibility());
+            PoseLandMark marker = new PoseLandMark(landmark.getX(), landmark.getY(), landmark.getVisibility());
 //          poseLandmarkStr += "\tLandmark ["+ landmarkIndex+ "]: ("+ (landmark.getX()*720)+ ", "+ (landmark.getY()*1280)+ ", "+ landmark.getVisibility()+ ")\n";
             ++landmarkIndex;
             poseMarkers.add(marker);
         }
         // Get Angle of Positions
-        double rightAngle = getAngle(poseMarkers.get(16),poseMarkers.get(14),poseMarkers.get(12));
-        double leftAngle = getAngle(poseMarkers.get(15),poseMarkers.get(13),poseMarkers.get(11));
-        double rightKnee = getAngle(poseMarkers.get(24),poseMarkers.get(26),poseMarkers.get(28));
-        double leftKnee = getAngle(poseMarkers.get(23),poseMarkers.get(25),poseMarkers.get(27));
-        double rightShoulder = getAngle(poseMarkers.get(14),poseMarkers.get(12),poseMarkers.get(24));
-        double leftShoulder = getAngle(poseMarkers.get(13),poseMarkers.get(11),poseMarkers.get(23));
-        Log.v(TAG,"======Degree Of Position]======\n"+
-                "rightAngle :"+rightAngle+"\n"+
-                "leftAngle :"+leftAngle+"\n"+
-                "rightHip :"+rightKnee+"\n"+
-                "leftHip :"+leftKnee+"\n"+
-                "rightShoulder :"+rightShoulder+"\n"+
-                "leftShoulder :"+leftShoulder+"\n");
+        double rightAngle = getAngle(poseMarkers.get(16), poseMarkers.get(14), poseMarkers.get(12));
+        double leftAngle = getAngle(poseMarkers.get(15), poseMarkers.get(13), poseMarkers.get(11));
+        double rightKnee = getAngle(poseMarkers.get(24), poseMarkers.get(26), poseMarkers.get(28));
+        double leftKnee = getAngle(poseMarkers.get(23), poseMarkers.get(25), poseMarkers.get(27));
+        double rightShoulder = getAngle(poseMarkers.get(14), poseMarkers.get(12), poseMarkers.get(24));
+        double leftShoulder = getAngle(poseMarkers.get(13), poseMarkers.get(11), poseMarkers.get(23));
+        /*
+        Log.v(TAG, "======Degree Of Position]======\n" +
+                "rightAngle :" + rightAngle + "\n" +
+                "leftAngle :" + leftAngle + "\n" +
+                "rightHip :" + rightKnee + "\n" +
+                "leftHip :" + leftKnee + "\n" +
+                "rightShoulder :" + rightShoulder + "\n" +
+                "leftShoulder :" + leftShoulder + "\n");
+        */
+        Str_angle = ("rightAngle :" + rightAngle + "\n" +
+                "leftAngle :" + leftAngle + "\n" +
+                "rightHip :" + rightKnee + "\n" +
+                "leftHip :" + leftKnee + "\n" +
+                "rightShoulder :" + rightShoulder + "\n" +
+                "leftShoulder :" + leftShoulder + "\n");
+        //Log.v(TAG, Str_angle);
+
         return poseLandmarkStr;
         /*
            16 오른 손목 14 오른 팔꿈치 12 오른 어깨 --> 오른팔 각도
@@ -330,11 +349,12 @@ public class MainActivity extends AppCompatActivity {
            13 왼   팔꿈 11 왼  어깨   23  왼  골반 --> 왼쪽 겨드랑이 각도
         */
     }
+
     static double getAngle(PoseLandMark firstPoint, PoseLandMark midPoint, PoseLandMark lastPoint) {
         double result =
                 Math.toDegrees(
-                        Math.atan2(lastPoint.getY() - midPoint.getY(),lastPoint.getX() - midPoint.getX())
-                                - Math.atan2(firstPoint.getY() - midPoint.getY(),firstPoint.getX() - midPoint.getX()));
+                        Math.atan2(lastPoint.getY() - midPoint.getY(), lastPoint.getX() - midPoint.getX())
+                                - Math.atan2(firstPoint.getY() - midPoint.getY(), firstPoint.getX() - midPoint.getX()));
         result = Math.abs(result); // Angle should never be negative
         if (result > 180) {
             result = (360.0 - result); // Always get the acute representation of the angle

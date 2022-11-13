@@ -17,7 +17,8 @@
 package com.example.myapplication;
 
 public class PoseLandMark {
-    float x,y, visible;
+    float x, y, visible;
+
     PoseLandMark(float x, float y, float visible) {
         this.x = x;
         this.y = y;
