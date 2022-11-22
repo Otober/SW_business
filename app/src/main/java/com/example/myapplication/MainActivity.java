@@ -84,11 +84,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String OUTPUT_LANDMARKS_STREAM_NAME = "pose_landmarks";
     private static final int NUM_HANDS = 2;
     private static final CameraHelper.CameraFacing CAMERA_FACING = CameraHelper.CameraFacing.BACK;
+
     // Flips the camera-preview frames vertically before sending them into FrameProcessor to be
     // processed in a MediaPipe graph, and flips the processed frames back when they are displayed.
     // This is needed because OpenGL represents images assuming the image origin is at the bottom-left
     // corner, whereas MediaPipe in general assumes the image origin is at top-left.
     private static final boolean FLIP_FRAMES_VERTICALLY = true;
+
+    private static int f_width = 1, f_height = 1;
 
     public static NormalizedLandmarkList poseLandmarks;
 
@@ -389,8 +392,8 @@ public class MainActivity extends AppCompatActivity {
     static double getAngle(PoseLandMark firstPoint, PoseLandMark midPoint, PoseLandMark lastPoint) {
         double result =
                 Math.toDegrees(
-                        Math.atan2(lastPoint.getY() - midPoint.getY(), lastPoint.getX() - midPoint.getX())
-                                - Math.atan2(firstPoint.getY() - midPoint.getY(), firstPoint.getX() - midPoint.getX()));
+                        Math.atan2((lastPoint.getY() - midPoint.getY()) * f_height, (lastPoint.getX() - midPoint.getX()) * f_width)
+                                - Math.atan2((firstPoint.getY() - midPoint.getY()) * f_height, (firstPoint.getX() - midPoint.getX()) * f_width));
         result = Math.abs(result); // Angle should never be negative
         if (result > 180) {
             result = (360.0 - result); // Always get the acute representation of the angle
@@ -440,6 +443,8 @@ public class MainActivity extends AppCompatActivity {
             if(view_flag) {
                 int width = getWidth();
                 int height = getHeight();
+                f_width = width;
+                f_height = height;
                 ArrayList<PoseLandMark> poseMarkers = new ArrayList<PoseLandMark>();
                 int landmarkIndex = 0;
                 for (NormalizedLandmark landmark : poseLandmarks.getLandmarkList()) {
