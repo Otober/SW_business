@@ -16,67 +16,41 @@
 
 package com.example.myapplication;
 
-import android.content.Context;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.Rect;
-import android.graphics.RectF;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.SurfaceTexture;
-import android.graphics.drawable.BitmapDrawable;
-import android.nfc.Tag;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
-import android.view.PixelCopy;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import com.google.mediapipe.components.CameraHelper;
 import com.google.mediapipe.components.CameraXPreviewHelper;
 import com.google.mediapipe.components.ExternalTextureConverter;
 import com.google.mediapipe.components.FrameProcessor;
 import com.google.mediapipe.components.PermissionHelper;
-import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
 import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmark;
+import com.google.mediapipe.formats.proto.LandmarkProto.NormalizedLandmarkList;
 import com.google.mediapipe.framework.AndroidAssetUtil;
-import com.google.mediapipe.framework.AndroidPacketGetter;
-import com.google.mediapipe.framework.Packet;
 import com.google.mediapipe.framework.PacketGetter;
 import com.google.mediapipe.glutil.EglManager;
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.graphics.SurfaceTexture;
-import android.os.Bundle;
-import android.widget.FrameLayout;
-import android.widget.TextView;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.lang.Math;
 
 
 /**
  * Main activity of MediaPipe example apps.
  */
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity_Original extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final String BINARY_GRAPH_NAME = "pose_tracking_gpu.binarypb";
     private static final String INPUT_VIDEO_STREAM_NAME = "input_video";
@@ -92,9 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static NormalizedLandmarkList poseLandmarks;
 
-    public boolean view_flag = false;
-
-    public myView my_view;
+    public static TextView textView1;
 
     static {
         // Load all native libraries needed by the app.
@@ -124,7 +96,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(getContentViewLayoutResId());
-
         previewDisplayView = new SurfaceView(this);
         setupPreviewDisplayView();
 
@@ -157,7 +128,9 @@ public class MainActivity extends AppCompatActivity {
         processor.addPacketCallback(
                 OUTPUT_LANDMARKS_STREAM_NAME,
                 (packet) -> {
-                    view_flag = true;
+                    Log.v(TAG, "Received Pose landmarks packet.");
+                    //get_Angle_String();
+
                     try {
 //                        NormalizedLandmarkList poseLandmarks = PacketGetter.getProto(packet, NormalizedLandmarkList.class);
                         byte[] landmarksRaw = PacketGetter.getProtoBytes(packet);
@@ -165,7 +138,8 @@ public class MainActivity extends AppCompatActivity {
                         poseLandmarks = NormalizedLandmarkList.parseFrom(landmarksRaw);
                         //Log.v(TAG, "[TS:" + packet.getTimestamp() + "] " + getPoseLandmarksDebugString(poseLandmarks));
                         SurfaceHolder srh = previewDisplayView.getHolder();
-                        my_view.invalidate();
+                        textView1.setText(get_Angle_String());
+
 //
 //                  -- this line cannot Running --
 //                    Canvas canvas = null;
@@ -235,6 +209,7 @@ public class MainActivity extends AppCompatActivity {
 
     protected void onCameraStarted(SurfaceTexture surfaceTexture) {
         previewFrameTexture = surfaceTexture;
+
         // Make the display view visible to start showing the preview. This triggers the
         // SurfaceHolder.Callback added to (the holder of) previewDisplayView.
         previewDisplayView.setVisibility(View.VISIBLE);
@@ -260,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void onPreviewDisplaySurfaceChanged(
-
             SurfaceHolder holder, int format, int width, int height) {
         // (Re-)Compute the ideal size of the camera-preview display (the area that the
         // camera-preview frames get rendered onto, potentially with scaling and rotation)
@@ -282,10 +256,9 @@ public class MainActivity extends AppCompatActivity {
                 isCameraRotated ? displaySize.getWidth() : displaySize.getHeight());
     }
 
-    private ArrayList<Double> f_get_Angle_Array() {
-        ArrayList<Double> Angle = new ArrayList<Double>();
+    private String get_Angle_String() {
         ArrayList<PoseLandMark> poseMarkers = new ArrayList<PoseLandMark>();
-        if(poseLandmarks == null) return null;
+        if(poseLandmarks == null) return "";
         int landmarkIndex = 0;
         for (NormalizedLandmark landmark : poseLandmarks.getLandmarkList()) {
             PoseLandMark marker = new PoseLandMark(landmark.getX(), landmark.getY(), landmark.getVisibility());
@@ -299,25 +272,23 @@ public class MainActivity extends AppCompatActivity {
         double leftKnee = getAngle(poseMarkers.get(23), poseMarkers.get(25), poseMarkers.get(27));
         double rightShoulder = getAngle(poseMarkers.get(14), poseMarkers.get(12), poseMarkers.get(24));
         double leftShoulder = getAngle(poseMarkers.get(13), poseMarkers.get(11), poseMarkers.get(23));
-        Angle.add(rightAngle);
-        Angle.add(leftAngle);
-        Angle.add(rightKnee);
-        Angle.add(leftKnee);
-        Angle.add(rightShoulder);
-        Angle.add(leftShoulder);
-        return Angle;
+        String Str_angle = ("rightAngle :" + rightAngle + "\n" +
+                "leftAngle :" + leftAngle + "\n" +
+                "rightHip :" + rightKnee + "\n" +
+                "leftHip :" + leftKnee + "\n" +
+                "rightShoulder :" + rightShoulder + "\n" +
+                "leftShoulder :" + leftShoulder + "\n");
+        return Str_angle;
     }
 
     private void setupPreviewDisplayView() {
         previewDisplayView.setVisibility(View.GONE);
-
         ViewGroup viewGroup = findViewById(R.id.preview_display_layout);
-        //ViewGroup viewGroup1 = findViewById(R.id.preview_display_layout_2);
-        //viewGroup1.addView(previewDisplayView);
-        viewGroup.addView(previewDisplayView);
-        my_view = new myView(findViewById(R.id.preview_display_layout).getContext());
-        viewGroup.addView(my_view);
+        viewGroup.addView(previewDisplayView, 0);
         //Log.v(TAG, get_Angle_String());
+
+        textView1 = (TextView) findViewById(R.id.textView2);
+
         previewDisplayView
                 .getHolder()
                 .addCallback(
@@ -332,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
                                 onPreviewDisplaySurfaceChanged(holder, format, width, height);
-                                // 이곳에서 width , height 가 720,128
+                                // 이곳에서 width , height 가 720,1280
                                 Log.d("Surface", "Surface Changed");
                             }
 
@@ -343,6 +314,7 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                         });
+
     }
 
     //해당 코드에서 landmark의 좌표를 추출해낼 수 있다.
@@ -375,6 +347,7 @@ public class MainActivity extends AppCompatActivity {
         */
 
         //Log.v(TAG, Str_angle);
+
         return poseLandmarkStr;
         /*
            16 오른 손목 14 오른 팔꿈치 12 오른 어깨 --> 오른팔 각도
@@ -396,84 +369,5 @@ public class MainActivity extends AppCompatActivity {
             result = (360.0 - result); // Always get the acute representation of the angle
         }
         return result;
-    }
-
-    public float f_get_dist(PoseLandMark a, PoseLandMark b, int width, int height) {
-        return (float)Math.sqrt(Math.pow((a.x - b.x) * width, 2.0)+ Math.pow((a.y - b.y) * height, 2.0));
-    }
-
-    public float f_get_cross(PoseLandMark a, PoseLandMark b, int width, int height) {
-        double vx = (b.x - a.x) * width;
-        double vy = (b.y - a.y) * height;
-        double t_vx = 100.0;
-        double t_vy = 0.0;
-        //Log.v(TAG, Double.toString(vx) + " " + Double.toString(vy));
-        double a1 = (t_vx * vy - t_vy * vx) / (Math.sqrt(t_vx * t_vx + t_vy * t_vy) * Math.sqrt(vx * vx + vy * vy));
-        double test = Math.asin(a1);
-        test = test / 3.14 * 180;
-        Log.v(TAG, "asin : " + Double.toString(test) + " A1 : " + Double.toString(a1));
-        double answer = test;
-        if(answer < 0) answer += 360;
-        return (float)answer;
-    }
-
-    public float f_dist(int width, int height) {
-        ArrayList<PoseLandMark> poseMarkers = new ArrayList<PoseLandMark>();
-        int landmarkIndex = 0;
-        for (NormalizedLandmark landmark : poseLandmarks.getLandmarkList()) {
-            PoseLandMark marker = new PoseLandMark(landmark.getX(), landmark.getY(), landmark.getVisibility());
-            ++landmarkIndex;
-            poseMarkers.add(marker);
-        }
-        float right = f_get_dist(poseMarkers.get(11), poseMarkers.get(13), width, height) / 2.0f;
-        float left = f_get_dist(poseMarkers.get(12), poseMarkers.get(14), width, height) / 2.0f;
-        return (right > left) ? left : right;
-    }
-
-    public class myView extends View {
-        public myView(Context context) {
-            super(context);
-        }
-
-        public void onDraw(Canvas canvas) {;
-            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-            if(view_flag) {
-                int width = getWidth();
-                int height = getHeight();
-                ArrayList<PoseLandMark> poseMarkers = new ArrayList<PoseLandMark>();
-                int landmarkIndex = 0;
-                for (NormalizedLandmark landmark : poseLandmarks.getLandmarkList()) {
-                    PoseLandMark marker = new PoseLandMark(landmark.getX(), landmark.getY(), landmark.getVisibility());
-                    ++landmarkIndex;
-                    poseMarkers.add(marker);
-                }
-                float dist = f_dist(width, height);
-                ArrayList<Double> Angle_array = f_get_Angle_Array();
-                Paint paint = new Paint();
-                paint.setColor(Color.BLUE);
-                paint.setStrokeWidth(10F);
-                paint.setStyle(Paint.Style.STROKE);
-                //Log.v(TAG, Float.toString(poseMarkers.get(11).x) + " " + Float.toString(poseMarkers.get(11).y));
-                float test = f_get_cross(poseMarkers.get(11), poseMarkers.get(13), width, height);
-                Log.v(TAG, "test : " + Float.toString(test));
-                RectF right_shoulder_rect = new RectF();
-                right_shoulder_rect.set(poseMarkers.get(11).x * width - dist, poseMarkers.get(11).y * height - dist, poseMarkers.get(11).x * width + dist, poseMarkers.get(11).y * height + dist);
-                canvas.drawArc(right_shoulder_rect, test, Angle_array.get(4).floatValue(), true, paint);
-                //canvas.drawCircle(poseMarkers.get(11).x * width, poseMarkers.get(11).y * height, f_dist(width, height), paint);
-                view_flag = false;
-                 /*
-           16 오른 손목 14 오른 팔꿈치 12 오른 어깨 --> 오른팔 각도
-           15 왼쪽 손목 13 왼쪽 팔꿈치 11 왼쪽 어깨 --> 왼  팔 각도
-           24 오른 골반 26 오른 무릎   28 오른 발목 --> 오른무릎 각도
-           23 왼쪽 골반 25 왼쪽 무릎   27 왼쪽 발목 --> 왼 무릎 각도
-           14 오른 팔꿈 12 오른 어깨   24 오른 골반 --> 오른 겨드랑이 각도
-           13 왼   팔꿈 11 왼  어깨   23  왼  골반 --> 왼쪽 겨드랑이 각도
-        */
-            }
-            else {
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-                Log.v(TAG, "reset");
-            }
-        }
     }
 }
