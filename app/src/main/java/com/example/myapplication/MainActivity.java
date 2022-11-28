@@ -99,6 +99,8 @@ public class MainActivity extends AppCompatActivity {
 
     public myView my_view;
 
+    private float avg_dist = 0.0f;
+
     static {
         // Load all native libraries needed by the app.
         System.loadLibrary("mediapipe_jni");
@@ -452,7 +454,10 @@ public class MainActivity extends AppCompatActivity {
                     ++landmarkIndex;
                     poseMarkers.add(marker);
                 }
-                float dist = f_dist(width, height);
+                if(avg_dist == 0.0f) avg_dist = f_dist(width, height);
+                //float dist = (avg_dist + f_dist(width, height))  / 2;
+                float dist = avg_dist;
+
                 ArrayList<Double> Angle_array = f_get_Angle_Array();
                 Paint paint = new Paint();
                 paint.setColor(Color.BLUE);
@@ -463,7 +468,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.v(TAG, "test : " + Float.toString(test));
                 RectF right_shoulder_rect = new RectF();
                 right_shoulder_rect.set(poseMarkers.get(11).x * width - dist, poseMarkers.get(11).y * height - dist, poseMarkers.get(11).x * width + dist, poseMarkers.get(11).y * height + dist);
-                canvas.drawArc(right_shoulder_rect, test, Angle_array.get(4).floatValue(), true, paint);
+                canvas.drawArc(right_shoulder_rect, test, Angle_array.get(5).floatValue(), true, paint);
                 //canvas.drawCircle(poseMarkers.get(11).x * width, poseMarkers.get(11).y * height, f_dist(width, height), paint);
                 view_flag = false;
                  /*
