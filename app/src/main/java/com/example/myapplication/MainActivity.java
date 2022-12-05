@@ -33,6 +33,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.text.TextPaint;
 import android.util.Log;
 import android.util.Size;
 import android.view.PixelCopy;
@@ -124,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
     private ApplicationInfo applicationInfo;
     // Handles camera access via the {@link CameraX} Jetpack support library.
     private CameraXPreviewHelper cameraHelper;
+
+    private String state;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -407,17 +410,19 @@ public class MainActivity extends AppCompatActivity {
         return (float)Math.sqrt(Math.pow((a.x - b.x) * width, 2.0)+ Math.pow((a.y - b.y) * height, 2.0));
     }
 
-    public float f_get_cross(PoseLandMark a, PoseLandMark b, int width, int height) {
-        double vx = (b.x - a.x) * width;
-        double vy = (b.y - a.y) * height;
+    public float f_get_cross(PoseLandMark a, PoseLandMark b, int width, int height, Boolean flag) {
+
+        double vx = (a.x - b.x) * width;
+        double vy = 1 - (a.y - b.y) * height;
         double t_vx = 100.0;
         double t_vy = 0.0;
-        //Log.v(TAG, Double.toString(vx) + " " + Double.toString(vy));
-        double a1 = (t_vx * vy - t_vy * vx) / (Math.sqrt(t_vx * t_vx + t_vy * t_vy) * Math.sqrt(vx * vx + vy * vy));
+        Log.v(TAG, Double.toString(vx) + " " + Double.toString(vy));
+        //Log.v(TAG, Double.toString(a.y));
+        double a1 = (vx * t_vy - vy * t_vx) / (Math.sqrt(vx * vx + vy * vy) * Math.sqrt(t_vx * t_vx + t_vy * t_vy));
         double test = Math.asin(a1);
         test = test / 3.14 * 180;
         Log.v(TAG, "asin : " + Double.toString(test) + " A1 : " + Double.toString(a1));
-        double answer = test;
+        double answer = 180 - test ;
         if(answer < 0) answer += 360;
         return (float)answer;
     }
@@ -455,8 +460,8 @@ public class MainActivity extends AppCompatActivity {
                     poseMarkers.add(marker);
                 }
                 if(avg_dist == 0.0f) avg_dist = f_dist(width, height);
-                //float dist = (avg_dist + f_dist(width, height))  / 2;
-                float dist = avg_dist;
+                float dist = (avg_dist + f_dist(width, height))  / 2;
+                //float dist = avg_dist;
 
                 ArrayList<Double> Angle_array = f_get_Angle_Array();
                 Paint paint = new Paint();
@@ -464,13 +469,52 @@ public class MainActivity extends AppCompatActivity {
                 paint.setStrokeWidth(10F);
                 paint.setStyle(Paint.Style.STROKE);
                 //Log.v(TAG, Float.toString(poseMarkers.get(11).x) + " " + Float.toString(poseMarkers.get(11).y));
-                float test = f_get_cross(poseMarkers.get(11), poseMarkers.get(13), width, height);
-                Log.v(TAG, "test : " + Float.toString(test));
+                //float test = f_get_cross(poseMarkers.get(11), poseMarkers.get(13), width, height);
+                //Log.v(TAG, "test : " + Float.toString(test));
+
+                /*dist
                 RectF right_shoulder_rect = new RectF();
                 right_shoulder_rect.set(poseMarkers.get(11).x * width - dist, poseMarkers.get(11).y * height - dist, poseMarkers.get(11).x * width + dist, poseMarkers.get(11).y * height + dist);
                 canvas.drawArc(right_shoulder_rect, test, Angle_array.get(5).floatValue(), true, paint);
                 //canvas.drawCircle(poseMarkers.get(11).x * width, poseMarkers.get(11).y * height, f_dist(width, height), paint);
-                view_flag = false;
+                 */
+
+
+                float left_arm = f_get_cross(poseMarkers.get(11), poseMarkers.get(13), width, height, false);
+                //Log.v(TAG, "test : " + Float.toString(test));
+                RectF left_arm_rect = new RectF();
+                left_arm_rect.set(poseMarkers.get(13).x * width - dist, poseMarkers.get(13).y * height - dist, poseMarkers.get(13).x * width + dist, poseMarkers.get(13).y * height + dist);
+                canvas.drawArc(left_arm_rect, left_arm, Angle_array.get(1).floatValue(), true, paint);
+
+                float right_arm = 360.0f - f_get_cross(poseMarkers.get(14), poseMarkers.get(16), width, height, false);
+                //Log.v(TAG, "test : " + Float.toString(test));
+                RectF right_arm_rect = new RectF();
+                right_arm_rect.set(poseMarkers.get(14).x * width - dist, poseMarkers.get(14).y * height - dist, poseMarkers.get(14).x * width + dist, poseMarkers.get(14).y * height + dist);
+                canvas.drawArc(right_arm_rect, right_arm, Angle_array.get(0).floatValue(), true, paint);
+
+
+                state = "idle";
+                if(Math.abs(Angle_array.get(0)) - 180.0 <= 30.0 && Math.abs(Angle_array.get(1)) - 180.0 <= 30.0) {
+                    if(Math.abs(Angle_array.get(0)) - 180.0 >= 15.0 || Math.abs(Angle_array.get(1)) - 180.0 >= 15.0) {
+                        state = "test1";
+                    }
+                }
+
+                else if(Math.abs(Angle_array.get(0)) - 90.0 <= 30.0 && Math.abs(Angle_array.get(1)) - 90.0 <= 30.0) {
+                    if(Math.abs(Angle_array.get(0)) - 90.0 >= 15.0 || Math.abs(Angle_array.get(1)) - 90.0 >= 15.0) {
+                        state = "test2";
+                    }
+                }
+
+                if(Angle_array.get(0) >= 90) state = "ttets1";
+                else state = "ttest2";
+
+                Log.v(TAG, Double.toString(Math.abs(Angle_array.get(0))) + " " + Double.toString(Math.abs(Angle_array.get(1))) );
+                paint.setTextSize(120);
+                paint.setTextAlign(Paint.Align.CENTER);
+                canvas.drawText(state, f_width / 2.0f, 120, paint);
+
+
                  /*
            16 오른 손목 14 오른 팔꿈치 12 오른 어깨 --> 오른팔 각도
            15 왼쪽 손목 13 왼쪽 팔꿈치 11 왼쪽 어깨 --> 왼  팔 각도

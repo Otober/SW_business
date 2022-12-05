@@ -52,7 +52,8 @@ import java.util.ArrayList;
 
 public class MainActivity_Original extends AppCompatActivity {
     private static final String TAG = "MainActivity";
-    private static final String BINARY_GRAPH_NAME = "pose_tracking_gpu.binarypb";
+    //private static final String BINARY_GRAPH_NAME = "pose_tracking_gpu.binarypb";
+    private static final String BINARY_GRAPH_NAME = "pose_landmark_heavy.tflite";
     private static final String INPUT_VIDEO_STREAM_NAME = "input_video";
     private static final String OUTPUT_VIDEO_STREAM_NAME = "output_video";
     private static final String OUTPUT_LANDMARKS_STREAM_NAME = "pose_landmarks";
